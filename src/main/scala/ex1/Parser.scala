@@ -1,5 +1,7 @@
 package ex1
 
+import java.util.Optional
+
 /** Consider the Parser example shown in previous lesson. Analogously to
   * NonEmpty, create a mixin NotTwoConsecutive, which adds the idea that one
   * cannot parse two consecutive elements which are equal. Use it (as a mixin)
@@ -14,7 +16,8 @@ abstract class Parser[T]:
     (seq forall parse) & end // note &, not &&
 
 object Parsers:
-  val todo = ??? // put the extensions here..
+  val todo = ??? // put the extensions here...
+
 class BasicParser(chars: Set[Char]) extends Parser[Char]:
   override def parse(t: Char): Boolean = chars.contains(t)
   override def end: Boolean = true
@@ -22,6 +25,7 @@ class BasicParser(chars: Set[Char]) extends Parser[Char]:
 trait NonEmpty[T] extends Parser[T]:
   private[this] var empty = true
   abstract override def parse(t: T): Boolean =
+    println("NE")
     empty = false;
     super.parse(t) // who is super??
   abstract override def end: Boolean = !empty && super.end
@@ -31,11 +35,34 @@ class NonEmptyParser(chars: Set[Char])
     with NonEmpty[Char]
 
 trait NotTwoConsecutive[T] extends Parser[T]:
-  val todo = ???
-// ???
+  var previous: Option[T] = None
+  abstract override def parse(t: T): Boolean =
+    println("NTC")
+    previous match
+      case Some(`t`) => false
+      case _ =>
+
+        previous = Some(t)
+        super.parse(t)
 
 class NotTwoConsecutiveParser(chars: Set[Char])
-    extends BasicParser(chars) // with ????
+    extends BasicParser(chars) with NotTwoConsecutive[Char]
+
+//class ParserNTCNE(chars: Set[Char]) extends BasicParser(chars) with NonEmpty[Char] with NotTwoConsecutive[Char]
+
+extension(s: String)
+  def charParser() = BasicParser(s.toSet)
+
+trait ShorterThanN[T](n: Int) extends Parser[T]:
+  var c: Int = 0
+  abstract override def parse(t: T): Boolean = c match
+    case v if v < n =>
+      c = c + 1
+      super.parse(t)
+    case _ => false
+
+class ShorterThanNParser(chars: Set[Char], n: Int)
+  extends BasicParser(chars) with ShorterThanN[Char](n)
 
 @main def checkParsers(): Unit =
   def parser = new BasicParser(Set('a', 'b', 'c'))
